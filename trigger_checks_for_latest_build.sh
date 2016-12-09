@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-if [[ $# -ne 4 ]]; then
-  echo 'Usage: trigger_checks_for_latest_build.sh $CHECKS_GITHUB_REPO $CHECKS_REPO_TRAVIS_TOKEN $CHECKS_BRANCH $PRESTO_BRANCH'
+if [[ $# -ne 4 && $# -ne 5 ]]; then
+  echo 'Usage: trigger_checks_for_latest_build.sh $CHECKS_GITHUB_REPO $CHECKS_REPO_TRAVIS_TOKEN $CHECKS_BRANCH $PRESTO_BRANCH [$PRESTO_BUILD_NUMBER]'
   echo ''
   echo 'Passing $PRESTO_BRANCH = `@{LATEST_SPRINT_BRANCH}` will trigger checks for the latest sprint branch.'
   exit 1
@@ -11,6 +11,7 @@ CHECKS_GITHUB_REPO=${1/\//%2F}
 CHECKS_REPO_TRAVIS_TOKEN=$2
 CHECKS_BRANCH=$3
 PRESTO_BRANCH=$4
+PRESTO_BUILD=$5
 
 ARTIFACTS_S3_BUCKET='teradata-presto'
 ARTIFACTS_S3_PATH='travis_build_artifacts/Teradata/presto'
@@ -24,7 +25,9 @@ if [[ "$PRESTO_BRANCH" == '@{LATEST_SPRINT_BRANCH}' ]]; then
     echo "Current sprint branch resolved to [${PRESTO_BRANCH}]"
 fi
 
-PRESTO_BUILD=`aws_s3_ls s3://${ARTIFACTS_S3_BUCKET}/${ARTIFACTS_S3_PATH}/${PRESTO_BRANCH}/ | sed 's/[/]$//' | sort -n | tail -n1`
+if [[ "$PRESTO_BUILD" == '' ]];then
+  PRESTO_BUILD=`aws_s3_ls s3://${ARTIFACTS_S3_BUCKET}/${ARTIFACTS_S3_PATH}/${PRESTO_BRANCH}/ | sed 's/[/]$//' | sort -n | tail -n1`
+fi
 
 if [[ -z $PRESTO_BUILD ]]; then
     echo "No builds found for branch [$PRESTO_BRANCH]. Exiting."
@@ -33,10 +36,10 @@ fi
 
 CHECKS_RESULTS_DIR=`aws_s3_ls s3://${ARTIFACTS_S3_BUCKET}/${ARTIFACTS_S3_PATH}/${PRESTO_BRANCH}/${PRESTO_BUILD}/travis_checks/${CHECKS_BRANCH}/`
 
-if [[ "$CHECKS_RESULTS_DIR" != '' ]]; then
-    echo "Checks for checks branch: [${CHECKS_BRANCH}] already performed for build [${PRESTO_BUILD}], not triggering them again."
-    exit 0
-fi
+#if [[ "$CHECKS_RESULTS_DIR" != '' ]]; then
+#    echo "Checks for checks branch: [${CHECKS_BRANCH}] already performed for build [${PRESTO_BUILD}], not triggering them again."
+#    exit 0
+#fi
 
 BODY=$(cat << EOF
 {
