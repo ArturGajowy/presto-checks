@@ -1,3 +1,5 @@
+group: stable
+
 language: java
 
 dist: trusty
@@ -58,6 +60,7 @@ before_install:
  - export PRESTO_BUILD='BUILD_WILL_BE_OVERRIDEN'
 
 install:
+- sudo service haveged stop
 - sudo pip install awscli
 - |
   aws s3 sync s3://${ARTIFACTS_S3_BUCKET}/${ARTIFACTS_S3_PATH}/${PRESTO_BRANCH}/${PRESTO_BUILD} /tmp/artifacts \
